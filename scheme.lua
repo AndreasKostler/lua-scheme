@@ -18,7 +18,6 @@ local l_tonumber = tonumber
 local l_traceback = debug.traceback
 local l_setmetatable = setmetatable
 local l_tconcat = table.concat
-local l_assert = assert
 
 module("scheme")
 
@@ -866,7 +865,6 @@ local function eval(exp, env)
 	       if not is_symbol(var) then
 		  l_error("Assignment to non-symbol!")
 	       end
-               
 	       return evaluate(caddr(exp), env, function(v)
                                                    v["doc"] = docstring
 						   env[var] = v
