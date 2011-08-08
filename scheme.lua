@@ -18,6 +18,7 @@ local l_tonumber = tonumber
 local l_traceback = debug.traceback
 local l_setmetatable = setmetatable
 local l_tconcat = table.concat
+local l_assert = assert
 
 module("scheme")
 
@@ -81,6 +82,14 @@ local function is_vector(obj)
    return l_type(obj) == "table" and obj[1] == "vector"
 end
 
+local function make_string(str)
+   strobj = {[1] = "string"}
+   for i = 1, #str do
+     strobj[i+1] = str:sub(i,i)
+   end
+   return strobj
+end
+
 local function make_char(c)
    return {[1] = "char", [2] = c}
 end
@@ -131,7 +140,7 @@ local function primitive_arity(pri)
 end
 
 local function make_procedure(args, env, body)
-   return {[1] = "procedure", [2] = args, [3] = env, [4] = body}
+   return {[1] = "procedure", [2] = args, [3] = env, [4] = body, ["doc"] = ""}
 end
 
 local function procedure_args(proc)
@@ -332,6 +341,16 @@ local function length(obj)
    else
       l_error("List expected")
    end
+end
+
+local function doc(obj)
+  if is_nil(obj) then
+      return ""
+  elseif is_procedure(obj) then
+      return obj["doc"]
+  else
+      return ""
+  end
 end
 
 local function cadr(obj)
@@ -819,12 +838,24 @@ local function eval(exp, env)
 					    end)
 	 elseif op == "define" then
 	    local var = cadr(exp)
+            local docstring = caddr(exp)
+            if is_string(docstring) then
+               exp = cdr(exp)
+            else
+               docstring = make_string("No documentation available.")
+            end
 	    if is_pair(var) then
 	       local fname = car(var)
-	       local args = cdr(var)
+               local docstring = cadr(var)
+               local args = cdr(var)
+               if is_string (docstring) then
+                 args = cddr(var)
+               else
+                 docstring = make_string("No documentation available.")
+               end
 	       local body = cddr(exp)
 	       local proc = make_procedure(args, env, body)
-
+               proc["doc"] = docstring
 	       if not is_symbol(fname) then
 		  l_error("Procedure name must be a symbol!")
 	       end
@@ -835,8 +866,9 @@ local function eval(exp, env)
 	       if not is_symbol(var) then
 		  l_error("Assignment to non-symbol!")
 	       end
-
+               
 	       return evaluate(caddr(exp), env, function(v)
+                                                   v["doc"] = docstring
 						   env[var] = v
 						   return cont(undef_obj)
 						end)
@@ -936,7 +968,7 @@ add_primitive("null?", nullp, 1)
 add_primitive("length", length, 1)
 add_primitive("write", write, 1)
 add_primitive("newline", newline, 0)
-
+add_primitive("doc", doc, 1)
 --
 -- Module interface
 --
@@ -1012,4 +1044,3 @@ function repl()
    end
    return toplevel()
 end
-
