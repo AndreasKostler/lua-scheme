@@ -866,10 +866,10 @@ local function eval(exp, env)
 		  l_error("Assignment to non-symbol!")
 	       end
 	       return evaluate(caddr(exp), env, function(v)
-                                                   v["doc"] = docstring
-						   env[var] = v
-						   return cont(undef_obj)
-						end)
+               v["doc"] = docstring
+               env[var] = v
+               return cont(undef_obj)
+               end)
 	    end
 	 elseif op == "if" then
 	    return evaluate(cadr(exp),
